@@ -1,17 +1,27 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Store, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Store, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { toast } from 'sonner';
-import { authApi } from '@/lib/api';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { toast } from "sonner";
+import { authApi } from "@/lib/api";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 export default function VerifyOTPPage() {
-  const [otp, setOtp] = useState('');
-  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState("");
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
@@ -19,10 +29,10 @@ export default function VerifyOTPPage() {
 
   useEffect(() => {
     // Get email from localStorage
-    const storedEmail = localStorage.getItem('userEmail');
+    const storedEmail = localStorage.getItem("userEmail");
     if (!storedEmail) {
-      router.push('/admin/login');
-      toast.error('Please login first');
+      router.push("/admin/login");
+      toast.error("Please login first");
       return;
     }
     setEmail(storedEmail);
@@ -42,26 +52,26 @@ export default function VerifyOTPPage() {
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (otp.length !== 6) {
-      toast.error('Please enter a valid 6-digit OTP');
+      toast.error("Please enter a valid 6-digit OTP");
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
       const data = await authApi.verifyOtp({ email, otp });
-      
+
       // Store token
-      localStorage.setItem('adminToken', data.token);
-      
+      localStorage.setItem("adminToken", data.token);
+
       // Redirect to dashboard
-      router.push('/admin/dashboard');
-      toast.success('Account verified successfully');
+      router.push("/admin/dashboard");
+      toast.success("Account verified successfully");
     } catch (error) {
-      console.error('OTP verification error:', error);
-      toast.error('Invalid OTP. Please try again.');
+      console.error("OTP verification error:", error);
+      toast.error("Invalid OTP. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -69,14 +79,14 @@ export default function VerifyOTPPage() {
 
   const handleResendOTP = async () => {
     setIsResending(true);
-    
+
     try {
       await authApi.resendOtp({ email });
       setCountdown(60);
-      toast.success('OTP resent successfully');
+      toast.success("OTP resent successfully");
     } catch (error) {
-      console.error('Resend OTP error:', error);
-      toast.error('Failed to resend OTP. Please try again.');
+      console.error("Resend OTP error:", error);
+      toast.error("Failed to resend OTP. Please try again.");
     } finally {
       setIsResending(false);
     }
@@ -89,40 +99,39 @@ export default function VerifyOTPPage() {
           <div className="flex items-center justify-center mb-4">
             <Store className="w-12 h-12 text-primary" />
           </div>
-          <CardTitle className="text-2xl text-center">Verify Your Account</CardTitle>
+          <CardTitle className="text-2xl text-center">
+            Verify Your Account
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleVerify} className="space-y-4">
             <div className="text-center mb-4">
               <p className="text-sm text-gray-500">
-                We've sent a verification code to <span className="font-medium">{email}</span>
+                We&apos;ve sent a verification code to{" "}
+                <span className="font-medium">{email}</span>
               </p>
             </div>
-            
+
             <div className="flex justify-center py-2">
-              <InputOTP 
-                maxLength={6} 
-                value={otp} 
+              <InputOTP
+                maxLength={6}
+                value={otp}
                 onChange={setOtp}
                 disabled={isLoading}
                 render={({ slots }) => (
                   <InputOTPGroup>
-                    {slots.map((slot, index) => (
-                      <InputOTPSlot key={index} {...slot} />
+                    {slots.map((slot, i) => (
+                      <InputOTPSlot index={i} key={i} {...slot} />
                     ))}
                   </InputOTPGroup>
                 )}
               />
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Verifying...' : 'Verify Account'}
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Verifying..." : "Verify Account"}
             </Button>
-            
+
             <div className="text-center">
               <Button
                 type="button"
@@ -137,7 +146,7 @@ export default function VerifyOTPPage() {
                 ) : countdown > 0 ? (
                   `Resend OTP in ${countdown}s`
                 ) : (
-                  'Resend OTP'
+                  "Resend OTP"
                 )}
               </Button>
             </div>
@@ -145,10 +154,10 @@ export default function VerifyOTPPage() {
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-gray-500">
-            <Button 
-              variant="link" 
+            <Button
+              variant="link"
               className="p-0 h-auto text-sm"
-              onClick={() => router.push('/admin/login')}
+              onClick={() => router.push("/admin/login")}
             >
               Back to Login
             </Button>
