@@ -51,3 +51,13 @@ export interface OrderType {
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   createdAt: string;
 }
+
+export interface AuthResponseType {
+  token: string;
+  user: UserType;
+}
+
+export interface OtpVerificationResponseType {
+  token: string;
+  message: string;
+}

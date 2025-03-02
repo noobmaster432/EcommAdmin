@@ -12,9 +12,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { OrderType } from '@/app/types';
 import { toast } from 'sonner';
+import { ordersApi } from '@/lib/api';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchOrders();
@@ -22,11 +24,14 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('/orders/all');
-      const data = await response.json();
+      setIsLoading(true);
+      const data = await ordersApi.getAll();
       setOrders(data);
     } catch (error) {
+      console.error('Error fetching orders:', error);
       toast.error('Error fetching orders');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,38 +52,55 @@ export default function OrdersPage() {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Orders</h1>
 
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Order ID</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Items</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell>#{order.id}</TableCell>
-                <TableCell>{order.userId}</TableCell>
-                <TableCell>{order.items.length} items</TableCell>
-                <TableCell>${order.total.toFixed(2)}</TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(order.status)}>
-                    {order.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {new Date(order.createdAt).toLocaleDateString()}
-                </TableCell>
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-500">Loading orders...</p>
+          </div>
+        </div>
+      ) : (
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order ID</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Items</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Date</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {orders.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-4">
+                    No orders found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                orders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell>#{order.id}</TableCell>
+                    <TableCell>{order.userId}</TableCell>
+                    <TableCell>{order.items.length} items</TableCell>
+                    <TableCell>${order.total.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(order.status)}>
+                        {order.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

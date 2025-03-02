@@ -11,6 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// List of public routes that don't require authentication
+const PUBLIC_ROUTES = ['/admin/login', '/admin/register', '/admin/verify-otp'];
+
 export default function AdminLayout({
   children,
 }: {
@@ -23,20 +26,24 @@ export default function AdminLayout({
   useEffect(() => {
     // Check for authentication token
     const token = localStorage.getItem('adminToken');
-    if (!token && pathname !== '/admin/login') {
+    const isPublicRoute = PUBLIC_ROUTES.includes(pathname || '');
+    
+    if (!token && !isPublicRoute) {
       router.push('/admin/login');
-    } else {
+    } else if (token) {
       setIsAuthenticated(true);
     }
   }, [router, pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
+    localStorage.removeItem('userEmail'); // Clear email used for OTP verification
+    setIsAuthenticated(false);
     router.push('/admin/login');
   };
 
-  // Don't render the admin layout for the login page
-  if (pathname === '/admin/login') {
+  // Don't render the admin layout for public routes
+  if (PUBLIC_ROUTES.includes(pathname || '')) {
     return <>{children}</>;
   }
 

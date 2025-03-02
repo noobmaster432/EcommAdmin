@@ -1,4 +1,16 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
 export default function Home() {
+  const router = useRouter();
+  
+  useEffect(() => {
+    // Redirect to admin login page
+    router.push('/admin/login');
+  }, [router]);
+
   return (
     <div
       style={{
@@ -8,7 +20,7 @@ export default function Home() {
         textAlign: 'center',
       }}
     >
-      Start prompting.
+      Redirecting to admin panel...
     </div>
   );
 }

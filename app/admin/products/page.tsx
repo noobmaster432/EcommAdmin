@@ -12,34 +12,52 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { ProductType } from '@/app/types';
+import { ProductType, CategoryType } from '@/app/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { productsApi } from '@/lib/api';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<ProductType[]>([]);
+  const [categories, setCategories] = useState<CategoryType[]>([]);
   const [newProduct, setNewProduct] = useState({
     title: '',
     price: 0,
     description: '',
-    category: { id: 0, name: '', image: '' },
+    categoryId: '',
   });
   const [selectedImages, setSelectedImages] = useState<FileList | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/products/all');
-      const data = await response.json();
+      setIsLoadingData(true);
+      const data = await productsApi.getAll();
       setProducts(data);
     } catch (error) {
+      console.error('Error fetching products:', error);
       toast.error('Error fetching products');
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await productsApi.getCategories();
+      setCategories(data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast.error('Error fetching categories');
     }
   };
 
@@ -58,7 +76,7 @@ export default function ProductsPage() {
       formData.append('title', newProduct.title);
       formData.append('price', newProduct.price.toString());
       formData.append('description', newProduct.description);
-      formData.append('categoryId', newProduct.category.id.toString());
+      formData.append('categoryId', newProduct.categoryId);
 
       if (selectedImages) {
         Array.from(selectedImages).forEach((image) => {
@@ -66,10 +84,7 @@ export default function ProductsPage() {
         });
       }
 
-      const response = await fetch('/products/new', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await productsApi.create(formData);
 
       if (response.ok) {
         toast.success('Product created successfully');
@@ -79,13 +94,15 @@ export default function ProductsPage() {
           title: '',
           price: 0,
           description: '',
-          category: { id: 0, name: '', image: '' },
+          categoryId: '',
         });
         setSelectedImages(null);
       } else {
-        toast.error('Error creating product');
+        const errorData = await response.json();
+        toast.error(errorData.message || 'Error creating product');
       }
     } catch (error) {
+      console.error('Error creating product:', error);
       toast.error('Error creating product');
     } finally {
       setIsLoading(false);
@@ -94,17 +111,11 @@ export default function ProductsPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      const response = await fetch(`/products/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        toast.success('Product deleted successfully');
-        fetchProducts();
-      } else {
-        toast.error('Error deleting product');
-      }
+      await productsApi.delete(id);
+      toast.success('Product deleted successfully');
+      fetchProducts();
     } catch (error) {
+      console.error('Error deleting product:', error);
       toast.error('Error deleting product');
     }
   };
@@ -149,6 +160,27 @@ export default function ProductsPage() {
               />
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
+                  Category
+                </label>
+                <Select 
+                  value={newProduct.categoryId} 
+                  onValueChange={(value) => setNewProduct({ ...newProduct, categoryId: value })}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
                   Product Images
                 </label>
                 <div className="flex items-center space-x-2">
@@ -180,53 +212,74 @@ export default function ProductsPage() {
         </Dialog>
       </div>
 
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Image</TableHead>
-              <TableHead>ID</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Rating</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {products.map((product) => (
-              <TableRow key={product.id}>
-                <TableCell>
-                  {product.images[0] && (
-                    <div className="relative w-12 h-12">
-                      <Image
-                        src={product.images[0]}
-                        alt={product.title}
-                        fill
-                        className="object-cover rounded"
-                      />
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>{product.id}</TableCell>
-                <TableCell>{product.title}</TableCell>
-                <TableCell>${product.price}</TableCell>
-                <TableCell>{product.category.name}</TableCell>
-                <TableCell>{product.rating}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(product.id)}
-                  >
-                    Delete
-                  </Button>
-                </TableCell>
+      {isLoadingData ? (
+        <div className="flex justify-center py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-500">Loading products...</p>
+          </div>
+        </div>
+      ) : (
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Image</TableHead>
+                <TableHead>ID</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {products.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-4">
+                    No products found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                products.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>
+                      {product.images && product.images[0] ? (
+                        <div className="relative w-12 h-12">
+                          <Image
+                            src={product.images[0]}
+                            alt={product.title}
+                            fill
+                            className="object-cover rounded"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                          <span className="text-xs text-gray-500">No image</span>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>{product.id}</TableCell>
+                    <TableCell>{product.title}</TableCell>
+                    <TableCell>${product.price.toFixed(2)}</TableCell>
+                    <TableCell>{product.category?.name || 'N/A'}</TableCell>
+                    <TableCell>{product.rating || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(product.id)}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, ShoppingBag, DollarSign, TrendingUp } from 'lucide-react';
 import { UserType, OrderType, ProductType } from '@/app/types';
+import { usersApi, ordersApi, productsApi } from '@/lib/api';
+import { toast } from 'sonner';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -12,14 +14,16 @@ export default function DashboardPage() {
     totalRevenue: 0,
     totalProducts: 0,
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        setIsLoading(true);
         const [users, orders, products] = await Promise.all([
-          fetch('/users/all').then(res => res.json()),
-          fetch('/orders/all').then(res => res.json()),
-          fetch('/products/all').then(res => res.json()),
+          usersApi.getAll(),
+          ordersApi.getAll(),
+          productsApi.getAll(),
         ]);
 
         const revenue = orders.reduce((acc: number, order: OrderType) => acc + order.total, 0);
@@ -32,6 +36,9 @@ export default function DashboardPage() {
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
+        toast.error('Error loading dashboard data');
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -49,7 +56,9 @@ export default function DashboardPage() {
             <Users className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            <div className="text-2xl font-bold">
+              {isLoading ? '...' : stats.totalUsers}
+            </div>
           </CardContent>
         </Card>
 
@@ -59,7 +68,9 @@ export default function DashboardPage() {
             <ShoppingBag className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalOrders}</div>
+            <div className="text-2xl font-bold">
+              {isLoading ? '...' : stats.totalOrders}
+            </div>
           </CardContent>
         </Card>
 
@@ -70,7 +81,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${stats.totalRevenue.toFixed(2)}
+              {isLoading ? '...' : `$${stats.totalRevenue.toFixed(2)}`}
             </div>
           </CardContent>
         </Card>
@@ -81,7 +92,9 @@ export default function DashboardPage() {
             <TrendingUp className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProducts}</div>
+            <div className="text-2xl font-bold">
+              {isLoading ? '...' : stats.totalProducts}
+            </div>
           </CardContent>
         </Card>
       </div>
