@@ -118,14 +118,16 @@ export default function VerifyOTPPage() {
                 value={otp}
                 onChange={setOtp}
                 disabled={isLoading}
-                render={({ slots }) => (
-                  <InputOTPGroup>
-                    {slots.map((slot, i) => (
-                      <InputOTPSlot index={i} key={i} {...slot} />
-                    ))}
-                  </InputOTPGroup>
-                )}
-              />
+              >
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                </InputOTPGroup>
+              </InputOTP>
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
