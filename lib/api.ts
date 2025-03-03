@@ -1,5 +1,5 @@
 // API configuration
-export const API_BASE_URL = 'https://ecommerce-backend-public.onrender.com';
+export const API_BASE_URL = "https://ecommerce-backend-public-vw6i.onrender.com";
 
 // Helper function for API requests
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
