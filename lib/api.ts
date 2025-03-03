@@ -1,5 +1,5 @@
 // API configuration
-export const API_BASE_URL = "https://ecommerce-backend-public-vw6i.onrender.com";
+export const API_BASE_URL = 'https://ecommerce-backend-public-vw6i.onrender.com';
 
 // Helper function for API requests
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
@@ -22,11 +22,17 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
       return response;
     }
 
-    // For JSON responses
-    const data = await response.json();
+    // Handle empty responses
+    if (response.status === 204) {
+      return null;
+    }
+
+    // Check if the response has content before parsing JSON
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
     
     if (!response.ok) {
-      throw new Error(data.message || 'An error occurred');
+      throw new Error(data?.message || 'An error occurred');
     }
     
     return data;
@@ -50,7 +56,7 @@ export const authApi = {
       body: JSON.stringify(userData),
     }),
     
-  verifyOtp: (data: { email: string; otp: string }) => 
+  verifyOtp: (data: { userId: string; otp: string }) => 
     fetchApi('/users/verify-otp', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -66,9 +72,14 @@ export const authApi = {
 // Users API
 export const usersApi = {
   getAll: () => fetchApi('/users/all'),
-  getById: (id: number) => fetchApi(`/users/${id}`),
-  update: (id: number, data: any) => 
-    fetchApi(`/users/${id}`, {
+  getById: (id: string) => fetchApi(`/users/single/${id}`),
+  update: (id: string, data: any) => 
+    fetchApi(`/users/update/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  updatePassword: (id: string, data: { currentPassword: string; newPassword: string }) => 
+    fetchApi(`/users/update-password/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
@@ -77,9 +88,9 @@ export const usersApi = {
 // Products API
 export const productsApi = {
   getAll: () => fetchApi('/products/all'),
-  getById: (id: number) => fetchApi(`/products/${id}`),
+  getById: (id: string) => fetchApi(`/products/single/${id}`),
   getLatest: () => fetchApi('/products/latest'),
-  getCategories: () => fetchApi('/products/categories'),
+  getCategories: () => fetchApi('/categories/all'),
   
   create: (formData: FormData) => {
     // For FormData, don't set Content-Type header as the browser will set it with the boundary
@@ -92,8 +103,8 @@ export const productsApi = {
     });
   },
   
-  update: (id: number, formData: FormData) => {
-    return fetch(`${API_BASE_URL}/products/${id}`, {
+  update: (id: string, formData: FormData) => {
+    return fetch(`${API_BASE_URL}/products/update/${id}`, {
       method: 'PUT',
       body: formData,
       headers: {
@@ -102,21 +113,28 @@ export const productsApi = {
     });
   },
   
-  delete: (id: number) => 
-    fetchApi(`/products/${id}`, {
+  delete: (id: string) => 
+    fetchApi(`/products/delete/${id}`, {
       method: 'DELETE',
     }),
 };
 
 // Orders API
 export const ordersApi = {
-  getAll: () => fetchApi('/orders/all'),
+  getAll: () => fetchApi('/orders/admin'),
   getById: (id: number) => fetchApi(`/orders/${id}`),
-  create: (cartId: number) => 
+  getUserOrders: (userId: number) => fetchApi(`/orders/user/${userId}`),
+  create: (cartId: number, orderData: any) => 
     fetchApi(`/orders/${cartId}`, {
       method: 'POST',
+      body: JSON.stringify(orderData),
     }),
-  delete: (orderId: number, userId: number) => 
+  updateStatus: (orderId: number, statusData: any) => 
+    fetchApi(`/orders/status/${orderId}`, {
+      method: 'PUT',
+      body: JSON.stringify(statusData),
+    }),
+  cancelOrder: (orderId: number, userId: number) => 
     fetchApi(`/orders/${orderId}/${userId}`, {
       method: 'PUT',
     }),

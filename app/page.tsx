@@ -7,8 +7,16 @@ export default function Home() {
   const router = useRouter();
   
   useEffect(() => {
-    // Redirect to admin login page
-    router.push('/admin/login');
+    // Check if user is already authenticated
+    const token = localStorage.getItem('adminToken');
+    
+    if (token) {
+      // If authenticated, redirect to dashboard
+      router.push('/admin/dashboard');
+    } else {
+      // Otherwise redirect to login
+      router.push('/admin/login');
+    }
   }, [router]);
 
   return (
@@ -20,7 +28,7 @@ export default function Home() {
         textAlign: 'center',
       }}
     >
-      Redirecting to admin panel...
+      Redirecting...
     </div>
   );
 }

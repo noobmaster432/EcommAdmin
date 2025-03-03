@@ -26,17 +26,20 @@ export default function OrdersPage() {
     try {
       setIsLoading(true);
       const data = await ordersApi.getAll();
-      setOrders(data);
+      // Ensure data is an array before setting state
+      setOrders(Array.isArray(data.allOrders) ? data.allOrders : []);
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Error fetching orders');
+      // Initialize with empty array on error
+      setOrders([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'completed':
         return 'bg-green-500';
       case 'processing':
@@ -81,11 +84,11 @@ export default function OrdersPage() {
                 </TableRow>
               ) : (
                 orders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell>#{order.id}</TableCell>
-                    <TableCell>{order.userId}</TableCell>
+                  <TableRow key={order._id}>
+                    <TableCell>{order._id}</TableCell>
+                    <TableCell>{order.user._id}</TableCell>
                     <TableCell>{order.items.length} items</TableCell>
-                    <TableCell>${order.total.toFixed(2)}</TableCell>
+                    <TableCell>${order.totalPrice.toFixed(2)}</TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(order.status)}>
                         {order.status}

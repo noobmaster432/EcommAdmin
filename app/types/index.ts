@@ -1,23 +1,24 @@
 'use client';
 
 export interface ProductType {
-  id: number;
-  title: string;
+  _id: string;
+  name: string;
   price: number;
-  description: string;
-  images: string[];
-  category: Category;
-  rating: number;
+  description?: string;
+  photo?: string;
+  category: string;
+  rating?: number;
+  stock?: number;
 }
 
 export interface Category {
-  id: number;
+  _id: string;
   name: string;
   image: string;
 }
 
 export interface CategoryType {
-  id: number;
+  _id: string;
   name: string;
   image: string;
 }
@@ -38,18 +39,24 @@ export interface NotificationType {
 }
 
 export interface UserType {
-  id: number;
+  _id: string;
   email: string;
   fullName: string;
 }
 
 export interface OrderType {
-  id: number;
-  userId: number;
+  _id: string;
+  user: {
+    _id: string;
+    fullName: string;
+    email: string;
+  };
   items: CartItemType[];
-  total: number;
-  status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  totalPrice: number;
+  status: 'Pending' | 'Processing' | 'Completed' | 'Cancelled';
   createdAt: string;
+  shippingAddress?: string;
+  paymentMethod?: string;
 }
 
 export interface AuthResponseType {

@@ -25,10 +25,13 @@ export default function UsersPage() {
     try {
       setIsLoading(true);
       const data = await usersApi.getAll();
-      setUsers(data);
+      // Ensure data is an array before setting state
+      setUsers(Array.isArray(data.users) ? data.users : []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Error fetching users');
+      // Initialize with empty array on error
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }
@@ -64,8 +67,8 @@ export default function UsersPage() {
                 </TableRow>
               ) : (
                 users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.id}</TableCell>
+                  <TableRow key={user._id}>
+                    <TableCell>{user._id}</TableCell>
                     <TableCell>{user.fullName}</TableCell>
                     <TableCell>{user.email}</TableCell>
                   </TableRow>

@@ -23,12 +23,20 @@ export default function LoginPage() {
     try {
       const data = await authApi.login({ email, password });
       
-      // Store email for OTP verification
+      // Store token directly
+      localStorage.setItem('adminToken', data.token);
+      
+      // Store userId if available for potential OTP verification
+      if (data.user && data.user._id) {
+        localStorage.setItem('userId', data.user._id);
+      }
+      
+      // Store email for potential OTP resending
       localStorage.setItem('userEmail', email);
       
-      // Redirect to OTP verification
-      router.push('/admin/verify-otp');
-      toast.success('Please verify your account with OTP');
+      // Redirect to dashboard
+      router.push('/admin/dashboard');
+      toast.success('Login successful');
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Invalid credentials');
@@ -68,18 +76,19 @@ export default function LoginPage() {
                 disabled={isLoading}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign In"}
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-gray-500">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/admin/register"
-              className="text-primary hover:underline"
-            >
+            Don't have an account?{' '}
+            <Link href="/admin/register" className="text-primary hover:underline">
               Register
             </Link>
           </p>

@@ -29,14 +29,23 @@ export default function RegisterPage() {
     setIsLoading(true);
     
     try {
-      await authApi.register({ email, fullName, password });
+      const data = await authApi.register({ email, fullName, password });
       
-      // Store email for OTP verification
-      localStorage.setItem('userEmail', email);
-      
-      // Redirect to OTP verification
-      router.push('/admin/verify-otp');
-      toast.success('Registration successful! Please verify your account with OTP');
+      // Store userId for OTP verification if needed
+      if (data.userId) {
+        localStorage.setItem('userId', data.userId);
+        router.push('/admin/verify-otp');
+        toast.success('Registration successful! Please verify your account with OTP');
+      } else if (data.token) {
+        // If token is directly provided, store it and redirect to dashboard
+        localStorage.setItem('adminToken', data.token);
+        router.push('/admin/dashboard');
+        toast.success('Registration successful!');
+      } else {
+        // Fallback to login page
+        router.push('/admin/login');
+        toast.success('Registration successful! Please login.');
+      }
     } catch (error) {
       console.error('Registration error:', error);
       toast.error('Registration failed. Please try again.');

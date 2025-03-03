@@ -22,13 +22,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export default function ProductsPage() {
   const [products, setProducts] = useState<ProductType[]>([]);
   const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [newProduct, setNewProduct] = useState({
-    title: '',
+    name: '',
     price: 0,
-    description: '',
-    categoryId: '',
+    stock: 0,
+    category: '',
   });
-  const [selectedImages, setSelectedImages] = useState<FileList | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -38,14 +39,26 @@ export default function ProductsPage() {
     fetchCategories();
   }, []);
 
+  // Create a map of category IDs to names when categories are loaded
+  useEffect(() => {
+    const map: Record<string, string> = {};
+    categories.forEach(category => {
+      map[category._id] = category.name;
+    });
+    setCategoryMap(map);
+  }, [categories]);
+
   const fetchProducts = async () => {
     try {
       setIsLoadingData(true);
       const data = await productsApi.getAll();
-      setProducts(data);
+      // Ensure data is an array before setting state
+      setProducts(Array.isArray(data.products) ? data.products : []);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Error fetching products');
+      // Initialize with empty array on error
+      setProducts([]);
     } finally {
       setIsLoadingData(false);
     }
@@ -54,16 +67,19 @@ export default function ProductsPage() {
   const fetchCategories = async () => {
     try {
       const data = await productsApi.getCategories();
-      setCategories(data);
+      // Ensure data is an array before setting state
+      setCategories(Array.isArray(data.categories) ? data.categories : []);
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast.error('Error fetching categories');
+      // Initialize with empty array on error
+      setCategories([]);
     }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setSelectedImages(e.target.files);
+      setSelectedImage(e.target.files[0]);
     }
   };
 
@@ -73,15 +89,13 @@ export default function ProductsPage() {
 
     try {
       const formData = new FormData();
-      formData.append('title', newProduct.title);
+      formData.append('name', newProduct.name);
       formData.append('price', newProduct.price.toString());
-      formData.append('description', newProduct.description);
-      formData.append('categoryId', newProduct.categoryId);
+      formData.append('stock', newProduct.stock.toString());
+      formData.append('category', newProduct.category);
 
-      if (selectedImages) {
-        Array.from(selectedImages).forEach((image) => {
-          formData.append('images', image);
-        });
+      if (selectedImage) {
+        formData.append('photo', selectedImage);
       }
 
       const response = await productsApi.create(formData);
@@ -91,12 +105,12 @@ export default function ProductsPage() {
         setIsDialogOpen(false);
         fetchProducts();
         setNewProduct({
-          title: '',
+          name: '',
           price: 0,
-          description: '',
-          categoryId: '',
+          stock: 0,
+          category: '',
         });
-        setSelectedImages(null);
+        setSelectedImage(null);
       } else {
         const errorData = await response.json();
         toast.error(errorData.message || 'Error creating product');
@@ -109,7 +123,7 @@ export default function ProductsPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       await productsApi.delete(id);
       toast.success('Product deleted successfully');
@@ -118,6 +132,11 @@ export default function ProductsPage() {
       console.error('Error deleting product:', error);
       toast.error('Error deleting product');
     }
+  };
+
+  // Get category name from category ID
+  const getCategoryName = (categoryId: string) => {
+    return categoryMap[categoryId] || 'Unknown Category';
   };
 
   return (
@@ -137,9 +156,9 @@ export default function ProductsPage() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
-                placeholder="Title"
-                value={newProduct.title}
-                onChange={(e) => setNewProduct({ ...newProduct, title: e.target.value })}
+                placeholder="Product Name"
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                 required
                 disabled={isLoading}
               />
@@ -152,9 +171,10 @@ export default function ProductsPage() {
                 disabled={isLoading}
               />
               <Input
-                placeholder="Description"
-                value={newProduct.description}
-                onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                type="number"
+                placeholder="Stock"
+                value={newProduct.stock}
+                onChange={(e) => setNewProduct({ ...newProduct, stock: parseInt(e.target.value) })}
                 required
                 disabled={isLoading}
               />
@@ -163,8 +183,8 @@ export default function ProductsPage() {
                   Category
                 </label>
                 <Select 
-                  value={newProduct.categoryId} 
-                  onValueChange={(value) => setNewProduct({ ...newProduct, categoryId: value })}
+                  value={newProduct.category} 
+                  onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
                   disabled={isLoading}
                 >
                   <SelectTrigger>
@@ -172,7 +192,7 @@ export default function ProductsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
+                      <SelectItem key={category._id} value={category._id.toString()}>
                         {category.name}
                       </SelectItem>
                     ))}
@@ -181,22 +201,21 @@ export default function ProductsPage() {
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Product Images
+                  Product Image
                 </label>
                 <div className="flex items-center space-x-2">
                   <Input
                     type="file"
                     accept="image/*"
-                    multiple
                     onChange={handleImageChange}
                     disabled={isLoading}
                     className="flex-1"
                   />
                   <Upload className="w-4 h-4 text-gray-500" />
                 </div>
-                {selectedImages && (
+                {selectedImage && (
                   <div className="text-sm text-gray-500">
-                    {selectedImages.length} file(s) selected
+                    Selected: {selectedImage.name}
                   </div>
                 )}
               </div>
@@ -226,10 +245,10 @@ export default function ProductsPage() {
               <TableRow>
                 <TableHead>Image</TableHead>
                 <TableHead>ID</TableHead>
-                <TableHead>Title</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Price</TableHead>
+                <TableHead>Stock</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead>Rating</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -242,13 +261,13 @@ export default function ProductsPage() {
                 </TableRow>
               ) : (
                 products.map((product) => (
-                  <TableRow key={product.id}>
+                  <TableRow key={product._id}>
                     <TableCell>
-                      {product.images && product.images[0] ? (
+                      {product.photo ? (
                         <div className="relative w-12 h-12">
                           <Image
-                            src={product.images[0]}
-                            alt={product.title}
+                            src={product.photo}
+                            alt={product.name}
                             fill
                             className="object-cover rounded"
                           />
@@ -259,16 +278,16 @@ export default function ProductsPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>{product.id}</TableCell>
-                    <TableCell>{product.title}</TableCell>
+                    <TableCell>{product._id}</TableCell>
+                    <TableCell>{product.name}</TableCell>
                     <TableCell>${product.price.toFixed(2)}</TableCell>
-                    <TableCell>{product.category?.name || 'N/A'}</TableCell>
-                    <TableCell>{product.rating || 'N/A'}</TableCell>
+                    <TableCell>{product.stock || 'N/A'}</TableCell>
+                    <TableCell>{getCategoryName(product.category)}</TableCell>
                     <TableCell>
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() => handleDelete(product._id)}
                       >
                         Delete
                       </Button>

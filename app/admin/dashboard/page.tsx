@@ -20,13 +20,40 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       try {
         setIsLoading(true);
-        const [users, orders, products] = await Promise.all([
-          usersApi.getAll(),
-          ordersApi.getAll(),
-          productsApi.getAll(),
-        ]);
+        
+        // Fetch data with error handling for each API call
+        let users: UserType[] = [];
+        let orders: OrderType[] = [];
+        let products: ProductType[] = [];
+        
+        try {
+          const userData = await usersApi.getAll();
+          users = Array.isArray(userData.users) ? userData.users : [];
+        } catch (error) {
+          console.error('Error fetching users:', error);
+          users = [];
+        }
+        
+        try {
+          const ordersData = await ordersApi.getAll();
+          orders = Array.isArray(ordersData.allOrders) ? ordersData.allOrders : [];
+        } catch (error) {
+          console.error('Error fetching orders:', error);
+          orders = [];
+        }
+        
+        try {
+          const productsData = await productsApi.getAll();
+          products = Array.isArray(productsData.products) ? productsData.products : [];
+        } catch (error) {
+          console.error('Error fetching products:', error);
+          products = [];
+        }
 
-        const revenue = orders.reduce((acc: number, order: OrderType) => acc + order.total, 0);
+        // Calculate revenue safely
+        const revenue = orders.reduce((acc: number, order: OrderType) => {
+          return acc + (typeof order.totalPrice === 'number' && order.status !== "Cancelled" ? order.totalPrice : 0);
+        }, 0);
 
         setStats({
           totalUsers: users.length,

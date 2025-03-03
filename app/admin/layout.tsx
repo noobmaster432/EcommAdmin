@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, ChevronDown, Store, Users, ShoppingCart, Bell, Settings, LogOut } from 'lucide-react';
+import { Menu, ChevronDown, Store, Users, User, ShoppingCart, Bell, LogOut } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { usersApi } from '@/lib/api';
 
 // List of public routes that don't require authentication
 const PUBLIC_ROUTES = ['/admin/login', '/admin/register', '/admin/verify-otp'];
@@ -20,24 +21,42 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userName, setUserName] = useState('Admin');
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     // Check for authentication token
     const token = localStorage.getItem('adminToken');
+    const userId = localStorage.getItem('userId');
     const isPublicRoute = PUBLIC_ROUTES.includes(pathname || '');
     
     if (!token && !isPublicRoute) {
       router.push('/admin/login');
     } else if (token) {
       setIsAuthenticated(true);
+      
+      // Fetch user data if we have a userId
+      if (userId) {
+        fetchUserData(userId);
+      }
     }
   }, [router, pathname]);
 
+  const fetchUserData = async (userId: string) => {
+    try {
+      const userData = await usersApi.getById(userId);
+      if (userData && userData.user) {
+        setUserName(userData.user.fullName || 'Admin');
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
-    localStorage.removeItem('userEmail'); // Clear email used for OTP verification
+    localStorage.removeItem('userId');
     setIsAuthenticated(false);
     router.push('/admin/login');
   };
@@ -70,14 +89,14 @@ export default function AdminLayout({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="ml-4">
-                    <span className="mr-2">Admin</span>
+                    <span className="mr-2">{userName}</span>
                     <ChevronDown className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => router.push('/admin/settings')}>
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
+                  <DropdownMenuItem onClick={() => router.push('/admin/profile')}>
+                    <User className="w-4 h-4 mr-2" />
+                    Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="w-4 h-4 mr-2" />
@@ -126,6 +145,14 @@ export default function AdminLayout({
               >
                 <ShoppingCart className="w-5 h-5 mr-3" />
                 Orders
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => router.push('/admin/profile')}
+              >
+                <User className="w-5 h-5 mr-3" />
+                Profile
               </Button>
             </div>
           </nav>
