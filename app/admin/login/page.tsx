@@ -68,19 +68,18 @@ export default function LoginPage() {
                 disabled={isLoading}
               />
             </div>
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-gray-500">
-            Don't have an account?{' '}
-            <Link href="/admin/register" className="text-primary hover:underline">
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/admin/register"
+              className="text-primary hover:underline"
+            >
               Register
             </Link>
           </p>
